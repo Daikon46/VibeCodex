@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tic-Tac-Toe</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <section class="game-shell" aria-labelledby="game-title">
+        <p class="eyebrow">Play in the browser</p>
+        <h1 id="game-title">Tic-Tac-Toe</h1>
+        <p class="subtitle">
+          Take turns on the same screen. First to connect three marks wins.
+        </p>
+
+        <div class="status-panel">
+          <p class="status-label">Status</p>
+          <p class="status-message" id="statusMessage">Player X starts</p>
+        </div>
+
+        <div
+          class="board"
+          id="board"
+          role="grid"
+          aria-label="Tic-tac-toe board"
+        >
+          <button class="cell" type="button" data-cell-index="0" aria-label="Cell 1"></button>
+          <button class="cell" type="button" data-cell-index="1" aria-label="Cell 2"></button>
+          <button class="cell" type="button" data-cell-index="2" aria-label="Cell 3"></button>
+          <button class="cell" type="button" data-cell-index="3" aria-label="Cell 4"></button>
+          <button class="cell" type="button" data-cell-index="4" aria-label="Cell 5"></button>
+          <button class="cell" type="button" data-cell-index="5" aria-label="Cell 6"></button>
+          <button class="cell" type="button" data-cell-index="6" aria-label="Cell 7"></button>
+          <button class="cell" type="button" data-cell-index="7" aria-label="Cell 8"></button>
+          <button class="cell" type="button" data-cell-index="8" aria-label="Cell 9"></button>
+        </div>
+
+        <button class="reset-button" id="resetButton" type="button">
+          New game
+        </button>
+      </section>
+    </main>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
