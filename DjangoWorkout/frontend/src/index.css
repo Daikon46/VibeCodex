@@ -1,0 +1,93 @@
+:root {
+  color-scheme: dark;
+  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  --accent-strong: #ff7a00;
+  --accent-soft: #ffba42;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg-base: #0d1320;
+  --bg-accent: #17253a;
+  --panel-bg: rgba(14, 24, 40, 0.82);
+  --panel-border: rgba(145, 166, 196, 0.14);
+  --panel-shadow: 0 28px 70px rgba(0, 0, 0, 0.34);
+  --field-bg: rgba(27, 40, 62, 0.85);
+  --chip-bg: rgba(30, 46, 72, 0.95);
+  --chip-active-bg: linear-gradient(135deg, #ff8f1f, #ffd166);
+  --chip-active-text: #1b1200;
+  --text-primary: #f3f4ef;
+  --text-muted: #a8b2c7;
+  --theme-toggle-bg: rgba(241, 245, 249, 0.08);
+  --error-text: #ffb4ae;
+  --warning-text: #ffd59d;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg-base: #f2efe8;
+  --bg-accent: #f8c98c;
+  --panel-bg: rgba(255, 252, 246, 0.78);
+  --panel-border: rgba(77, 53, 28, 0.12);
+  --panel-shadow: 0 24px 60px rgba(114, 79, 35, 0.12);
+  --field-bg: rgba(245, 236, 224, 0.94);
+  --chip-bg: rgba(255, 244, 227, 0.95);
+  --chip-active-bg: linear-gradient(135deg, #2f6fed, #6ec6ff);
+  --chip-active-text: #fefefe;
+  --text-primary: #1d1b16;
+  --text-muted: #665c50;
+  --theme-toggle-bg: rgba(29, 27, 22, 0.06);
+  --error-text: #8a2018;
+  --warning-text: #8a4a00;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, var(--bg-accent), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(255, 122, 0, 0.18), transparent 20%),
+    linear-gradient(180deg, var(--bg-base), color-mix(in srgb, var(--bg-base) 84%, black));
+}
+
+button,
+input {
+  font: inherit;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1,
+h2 {
+  font-family: 'Clash Display', 'Space Grotesk', sans-serif;
+  line-height: 1.05;
+}
+
+h1 {
+  font-size: clamp(2.8rem, 6vw, 4.8rem);
+  letter-spacing: -0.05em;
+}
+
+h2 {
+  font-size: clamp(1.4rem, 2vw, 1.9rem);
+}
