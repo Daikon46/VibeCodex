@@ -7,13 +7,22 @@ MANAGE := $(PYTHON) backend/manage.py
 NPM := npm --prefix frontend
 COMPOSE := docker compose
 ENV_FILE := .env
+RUNTIME_DIR := .run
+BACKEND_PID_FILE := $(RUNTIME_DIR)/backend.pid
+FRONTEND_PID_FILE := $(RUNTIME_DIR)/frontend.pid
+BACKEND_LOG_FILE := $(RUNTIME_DIR)/backend.log
+FRONTEND_LOG_FILE := $(RUNTIME_DIR)/frontend.log
 
-.PHONY: help check-python check-npm check-docker check-compose backend-install frontend-install env init migrate backend frontend run db-up db-down db-logs db-reset backend-test frontend-test test build lint
+.PHONY: help check-python check-npm check-docker check-compose backend-install frontend-install init migrate backend frontend run check stop db-pull db-up db-down db-logs db-reset backend-test frontend-test test build lint
 
 help:
-	@printf "Available targets:\n"
+	@printf "Essential commands:\n"
 	@printf "  make init            Create .env if needed, install backend/frontend dependencies, and validate Docker Compose config\n"
-	@printf "  make env             Copy .env.example to .env if it does not already exist\n"
+	@printf "  make run             Start PostgreSQL, run migrations, then start backend and frontend headlessly\n"
+	@printf "  make check           Show whether postgres, backend, and frontend are running\n"
+	@printf "  make stop            Stop backend, frontend, and PostgreSQL to free ports\n"
+	@printf "\nOther commands:\n"
+	@printf "  make db-pull         Pull the PostgreSQL image with retries for transient network issues\n"
 	@printf "  make db-up           Start the PostgreSQL container and wait for it to become healthy\n"
 	@printf "  make db-down         Stop the PostgreSQL container\n"
 	@printf "  make db-logs         Tail PostgreSQL container logs\n"
@@ -21,7 +30,6 @@ help:
 	@printf "  make migrate         Run Django migrations using .env values\n"
 	@printf "  make backend         Start the Django development server\n"
 	@printf "  make frontend        Start the Vite development server with VITE_* vars from .env\n"
-	@printf "  make run             Start PostgreSQL, run migrations, then start backend and frontend locally\n"
 	@printf "  make backend-test    Run Django tests\n"
 	@printf "  make frontend-test   Run frontend tests\n"
 	@printf "  make test            Run backend and frontend tests\n"
@@ -49,22 +57,39 @@ backend-install: $(PYTHON)
 frontend-install: check-npm
 	$(NPM) install
 
-env:
+init: backend-install frontend-install check-compose
 	@if [ ! -f $(ENV_FILE) ]; then cp .env.example $(ENV_FILE); fi
-
-init: env backend-install frontend-install check-compose
 	@$(COMPOSE) config >/dev/null
 
-migrate: env backend-install
+migrate: backend-install
 	@bash -lc 'set -a; source $(ENV_FILE); set +a; $(MANAGE) migrate'
 
-backend: env backend-install
+backend: backend-install
 	@bash -lc 'set -a; source $(ENV_FILE); set +a; $(MANAGE) runserver'
 
-frontend: env frontend-install
+frontend: frontend-install
 	@bash -lc 'set -a; source $(ENV_FILE); set +a; $(NPM) run dev -- --host 127.0.0.1'
 
-db-up: env check-compose
+db-pull: check-compose
+	@bash -lc 'set -a; source $(ENV_FILE); set +a; \
+	attempt=1; \
+	max_attempts=3; \
+	while [ $$attempt -le $$max_attempts ]; do \
+		echo "Pulling postgres image (attempt $$attempt/$$max_attempts)..."; \
+		if $(COMPOSE) pull postgres; then \
+			exit 0; \
+		fi; \
+		if [ $$attempt -lt $$max_attempts ]; then \
+			echo "Pull failed. Waiting before retrying..."; \
+			sleep $$((attempt * 3)); \
+		fi; \
+		attempt=$$((attempt + 1)); \
+	done; \
+	echo "Failed to pull the PostgreSQL image after $$max_attempts attempts."; \
+	echo "Check Docker daemon access, internet connectivity, DNS, VPN/proxy settings, then retry."; \
+	exit 1'
+
+db-up: db-pull
 	@$(COMPOSE) up -d --wait postgres
 
 db-down: check-compose
@@ -77,10 +102,74 @@ db-reset: check-compose
 	@$(COMPOSE) down -v
 
 run: init db-up migrate
-	@bash -lc 'set -a; source $(ENV_FILE); set +a; $(MANAGE) runserver & \
-	BACKEND_PID=$$!; \
-	trap 'kill $$BACKEND_PID' EXIT INT TERM; \
-	$(NPM) run dev -- --host 127.0.0.1'
+	@mkdir -p $(RUNTIME_DIR)
+	@bash -lc 'if [ -f "$(BACKEND_PID_FILE)" ] && kill -0 "$$(cat "$(BACKEND_PID_FILE)")" 2>/dev/null; then \
+		echo "Backend is already running with PID $$(cat "$(BACKEND_PID_FILE)")"; \
+	else \
+		rm -f "$(BACKEND_PID_FILE)"; \
+		nohup bash -lc '\''set -a; source "$(ENV_FILE)"; set +a; $(MANAGE) runserver'\'' >"$(BACKEND_LOG_FILE)" 2>&1 & \
+		echo $$! >"$(BACKEND_PID_FILE)"; \
+		echo "Started backend (PID $$!). Log: $(BACKEND_LOG_FILE)"; \
+	fi'
+	@bash -lc 'if [ -f "$(FRONTEND_PID_FILE)" ] && kill -0 "$$(cat "$(FRONTEND_PID_FILE)")" 2>/dev/null; then \
+		echo "Frontend is already running with PID $$(cat "$(FRONTEND_PID_FILE)")"; \
+	else \
+		rm -f "$(FRONTEND_PID_FILE)"; \
+		nohup bash -lc '\''set -a; source "$(ENV_FILE)"; set +a; $(NPM) run dev -- --host 127.0.0.1'\'' >"$(FRONTEND_LOG_FILE)" 2>&1 & \
+		echo $$! >"$(FRONTEND_PID_FILE)"; \
+		echo "Started frontend (PID $$!). Log: $(FRONTEND_LOG_FILE)"; \
+	fi'
+	@echo "Backend:  http://127.0.0.1:8000"
+	@echo "Frontend: http://127.0.0.1:5173"
+	@echo "PostgreSQL: localhost:5432"
+	@echo "Use 'make check' to inspect status and 'make stop' to stop services."
+
+check:
+	@bash -lc 'if docker ps --format "{{.Names}}" >/dev/null 2>&1; then \
+		if docker ps --format "{{.Names}}" | grep -qx "django-workout-postgres"; then \
+			echo "postgres: running"; \
+		else \
+			echo "postgres: stopped"; \
+		fi; \
+	else \
+		echo "postgres: unknown (Docker unavailable)"; \
+	fi; \
+	if [ -f "$(BACKEND_PID_FILE)" ] && kill -0 "$$(cat "$(BACKEND_PID_FILE)")" 2>/dev/null; then \
+		echo "backend: running (PID $$(cat "$(BACKEND_PID_FILE)"))"; \
+	else \
+		echo "backend: stopped"; \
+	fi; \
+	if [ -f "$(FRONTEND_PID_FILE)" ] && kill -0 "$$(cat "$(FRONTEND_PID_FILE)")" 2>/dev/null; then \
+		echo "frontend: running (PID $$(cat "$(FRONTEND_PID_FILE)"))"; \
+	else \
+		echo "frontend: stopped"; \
+	fi'
+
+stop:
+	@bash -lc 'if [ -f "$(BACKEND_PID_FILE)" ]; then \
+		pid="$$(cat "$(BACKEND_PID_FILE)")"; \
+		if kill -0 "$$pid" 2>/dev/null; then \
+			kill "$$pid" && echo "Stopped backend (PID $$pid)"; \
+		else \
+			echo "Backend was not running"; \
+		fi; \
+		rm -f "$(BACKEND_PID_FILE)"; \
+	else \
+		echo "Backend was not running"; \
+	fi'
+	@bash -lc 'if [ -f "$(FRONTEND_PID_FILE)" ]; then \
+		pid="$$(cat "$(FRONTEND_PID_FILE)")"; \
+		if kill -0 "$$pid" 2>/dev/null; then \
+			kill "$$pid" && echo "Stopped frontend (PID $$pid)"; \
+		else \
+			echo "Frontend was not running"; \
+		fi; \
+		rm -f "$(FRONTEND_PID_FILE)"; \
+	else \
+		echo "Frontend was not running"; \
+	fi'
+	@$(COMPOSE) stop postgres >/dev/null 2>&1 || true
+	@echo "PostgreSQL stopped if it was running."
 
 backend-test: backend-install
 	cd backend && ../$(PYTHON) manage.py test
