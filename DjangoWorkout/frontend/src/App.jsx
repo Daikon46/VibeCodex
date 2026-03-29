@@ -82,13 +82,15 @@ function App() {
     <main className="app-shell">
       <section className="hero-panel">
         <div className="hero-copy">
-          <p className="eyebrow">Adaptive session builder</p>
-          <h1>Plan a focused workout in the time you actually have.</h1>
-          <p className="hero-text">
-            Pick the muscle groups you want to train, set your available time,
-            and the app builds a sequence that starts easy, hits hard, and
-            fills remaining space with medium effort work.
-          </p>
+          <h1>Adaptive session builder</h1>
+          <div className="hero-instruction">
+            <p className="eyebrow">Instruction</p>
+            <p className="hero-text">
+              Pick the muscle groups you want to train, set your available
+              time, and the app builds a sequence that starts easy, hits hard,
+              and fills remaining space with medium effort work.
+            </p>
+          </div>
         </div>
         <button
           type="button"

@@ -28,6 +28,10 @@
   max-width: 700px;
 }
 
+.hero-instruction {
+  margin-top: 20px;
+}
+
 .eyebrow,
 .section-label,
 .summary-label {
