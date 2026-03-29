@@ -12,8 +12,11 @@ BACKEND_PID_FILE := $(RUNTIME_DIR)/backend.pid
 FRONTEND_PID_FILE := $(RUNTIME_DIR)/frontend.pid
 BACKEND_LOG_FILE := $(RUNTIME_DIR)/backend.log
 FRONTEND_LOG_FILE := $(RUNTIME_DIR)/frontend.log
+SUPERUSER_USERNAME ?= admin
+SUPERUSER_EMAIL ?= admin@example.com
+SUPERUSER_PASSWORD ?= admin123
 
-.PHONY: help check-python check-npm check-docker check-compose backend-install frontend-install init migrate backend frontend run check stop db-pull db-up db-down db-logs db-reset backend-test frontend-test test build lint
+.PHONY: help check-python check-npm check-docker check-compose backend-install frontend-install init migrate ensure-superuser backend frontend run check stop db-pull db-up db-down db-logs db-reset backend-test frontend-test test build lint
 
 help:
 	@printf "Essential commands:\n"
@@ -28,6 +31,7 @@ help:
 	@printf "  make db-logs         Tail PostgreSQL container logs\n"
 	@printf "  make db-reset        Remove the PostgreSQL container and its persistent volume\n"
 	@printf "  make migrate         Run Django migrations using .env values\n"
+	@printf "  make ensure-superuser Create the Django admin user if it does not exist\n"
 	@printf "  make backend         Start the Django development server\n"
 	@printf "  make frontend        Start the Vite development server with VITE_* vars from .env\n"
 	@printf "  make backend-test    Run Django tests\n"
@@ -63,6 +67,13 @@ init: backend-install frontend-install check-compose
 
 migrate: backend-install
 	@bash -lc 'set -a; source $(ENV_FILE); set +a; $(MANAGE) migrate'
+
+ensure-superuser: backend-install
+	@bash -lc 'set -a; source $(ENV_FILE); set +a; \
+	export DJANGO_SUPERUSER_USERNAME="$${DJANGO_SUPERUSER_USERNAME:-$(SUPERUSER_USERNAME)}"; \
+	export DJANGO_SUPERUSER_EMAIL="$${DJANGO_SUPERUSER_EMAIL:-$(SUPERUSER_EMAIL)}"; \
+	export DJANGO_SUPERUSER_PASSWORD="$${DJANGO_SUPERUSER_PASSWORD:-$(SUPERUSER_PASSWORD)}"; \
+	$(MANAGE) shell -c "from django.contrib.auth import get_user_model; import os; User = get_user_model(); username = os.environ[\"DJANGO_SUPERUSER_USERNAME\"]; email = os.environ[\"DJANGO_SUPERUSER_EMAIL\"]; password = os.environ[\"DJANGO_SUPERUSER_PASSWORD\"]; user, created = User.objects.update_or_create(username=username, defaults={\"email\": email, \"is_staff\": True, \"is_superuser\": True}); user.set_password(password); user.save(); print(\"Created Django superuser.\" if created else \"Ensured Django superuser exists.\")"'
 
 backend: backend-install
 	@bash -lc 'set -a; source $(ENV_FILE); set +a; $(MANAGE) runserver'
@@ -101,7 +112,7 @@ db-logs: check-compose
 db-reset: check-compose
 	@$(COMPOSE) down -v
 
-run: init db-up migrate
+run: init db-up migrate ensure-superuser
 	@mkdir -p $(RUNTIME_DIR)
 	@bash -lc 'if [ -f "$(BACKEND_PID_FILE)" ] && kill -0 "$$(cat "$(BACKEND_PID_FILE)")" 2>/dev/null; then \
 		echo "Backend is already running with PID $$(cat "$(BACKEND_PID_FILE)")"; \
@@ -120,8 +131,13 @@ run: init db-up migrate
 		echo "Started frontend (PID $$!). Log: $(FRONTEND_LOG_FILE)"; \
 	fi'
 	@echo "Backend:  http://127.0.0.1:8000"
+	@echo "Admin:    http://127.0.0.1:8000/admin/"
 	@echo "Frontend: http://127.0.0.1:5173"
 	@echo "PostgreSQL: localhost:5432"
+	@bash -lc 'set -a; source $(ENV_FILE); set +a; \
+	echo "Superuser username: $${DJANGO_SUPERUSER_USERNAME:-$(SUPERUSER_USERNAME)}"; \
+	echo "Superuser email:    $${DJANGO_SUPERUSER_EMAIL:-$(SUPERUSER_EMAIL)}"; \
+	echo "Superuser password: $${DJANGO_SUPERUSER_PASSWORD:-$(SUPERUSER_PASSWORD)}"'
 	@echo "Use 'make check' to inspect status and 'make stop' to stop services."
 
 check:
