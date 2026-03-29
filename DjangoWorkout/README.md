@@ -22,6 +22,17 @@ Simple web app that generates a workout session from selected muscle groups and 
 2. Set `VITE_API_BASE_URL` in `.env` if needed.
 3. Start the app with `npm run dev`.
 
+## Makefile shortcuts
+
+- `make setup` creates `.venv`, installs Python dependencies, and installs frontend packages.
+- `make env` copies `.env.example` to `.env` if needed.
+- `make migrate` runs Django migrations.
+- `make backend` starts the Django development server.
+- `make frontend` starts the Vite development server.
+- `make dev` starts the backend in the background and the frontend in the foreground.
+- `make test` runs both backend and frontend tests.
+- `make build` builds the frontend for production.
+
 ## Tests
 
 - Backend: `python backend/manage.py test`
