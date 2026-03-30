@@ -28,6 +28,12 @@
   max-width: 700px;
 }
 
+.hero-controls {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
 .hero-instruction {
   margin-top: 20px;
 }
@@ -48,6 +54,8 @@
 }
 
 .theme-toggle,
+.language-toggle,
+.language-option,
 .muscle-chip,
 .submit-button {
   border: 0;
@@ -59,17 +67,60 @@
 }
 
 .theme-toggle:hover,
+.language-toggle:hover,
+.language-option:hover,
 .muscle-chip:hover,
 .submit-button:hover {
   transform: translateY(-1px);
 }
 
-.theme-toggle {
+.theme-toggle,
+.language-toggle {
   background: var(--theme-toggle-bg);
   color: var(--text-primary);
   border-radius: 999px;
   padding: 12px 18px;
   font-weight: 600;
+}
+
+.language-menu {
+  position: relative;
+}
+
+.language-toggle,
+.language-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.language-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 96px;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 18px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: blur(18px);
+}
+
+.language-option {
+  background: var(--field-bg);
+  border-radius: 999px;
+  padding: 10px 14px;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.language-option.active {
+  background: var(--chip-active-bg);
+  color: var(--chip-active-text);
 }
 
 .planner-grid {
@@ -241,6 +292,12 @@
   .hero-panel,
   .exercise-item {
     flex-direction: column;
+  }
+
+  .hero-controls {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 
   .exercise-times {
