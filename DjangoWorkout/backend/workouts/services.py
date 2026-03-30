@@ -12,6 +12,8 @@ class WorkoutGenerationError(Exception):
 class PlannedItem:
     order: int
     exercise_name: str
+    exercise_name_ru: str
+    exercise_name_zh: str
     muscle_group: str
     difficulty: str
     duration_seconds: int
@@ -35,6 +37,8 @@ def _serialize_items(exercises):
             PlannedItem(
                 order=index,
                 exercise_name=exercise.name,
+                exercise_name_ru=exercise.name_ru or exercise.name,
+                exercise_name_zh=exercise.name_zh or exercise.name,
                 muscle_group=exercise.muscle_group,
                 difficulty=exercise.difficulty,
                 duration_seconds=exercise.duration_seconds,

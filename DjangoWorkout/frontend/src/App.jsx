@@ -239,6 +239,16 @@ function App() {
     return t.difficulties[difficultyKey] || difficultyKey
   }
 
+  function getExerciseName(item) {
+    if (language === 'ru') {
+      return item.exercise_name_ru || item.exercise_name
+    }
+    if (language === 'zh') {
+      return item.exercise_name_zh || item.exercise_name
+    }
+    return item.exercise_name
+  }
+
   function translateApiMessage(message) {
     return t.apiMessages[message] || message
   }
@@ -412,7 +422,7 @@ function App() {
                 {result.items.map((item) => (
                   <li key={`${item.order}-${item.exercise_name}`} className="exercise-item">
                     <div>
-                      <p className="exercise-name">{item.exercise_name}</p>
+                      <p className="exercise-name">{getExerciseName(item)}</p>
                       <p className="exercise-meta">
                         {translateMuscleGroup(item.muscle_group)} ·{' '}
                         {translateDifficulty(item.difficulty)}

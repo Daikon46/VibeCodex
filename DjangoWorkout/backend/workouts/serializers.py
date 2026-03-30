@@ -20,6 +20,8 @@ class WorkoutRequestSerializer(serializers.Serializer):
 class WorkoutItemSerializer(serializers.Serializer):
     order = serializers.IntegerField()
     exercise_name = serializers.CharField()
+    exercise_name_ru = serializers.CharField()
+    exercise_name_zh = serializers.CharField()
     muscle_group = serializers.ChoiceField(choices=Exercise.MuscleGroup.values)
     difficulty = serializers.ChoiceField(choices=Exercise.Difficulty.values)
     duration_seconds = serializers.IntegerField()

@@ -16,6 +16,8 @@ class Exercise(models.Model):
         HARD = "hard", "Hard"
 
     name = models.CharField(max_length=120, unique=True)
+    name_ru = models.CharField(max_length=120, blank=True)
+    name_zh = models.CharField(max_length=120, blank=True)
     muscle_group = models.CharField(max_length=24, choices=MuscleGroup.choices)
     difficulty = models.CharField(max_length=12, choices=Difficulty.choices)
     duration_seconds = models.PositiveIntegerField(validators=[MinValueValidator(30)])
