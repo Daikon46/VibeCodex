@@ -43,4 +43,36 @@ describe('App', () => {
       expect(localStorage.getItem('workout-planner-theme')).toBe('light')
     })
   })
+
+  test('switches interface language to chinese', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValueOnce({
+      ok: true,
+      json: async () => [{ key: 'chest', label: 'Chest' }],
+    })
+
+    render(<App />)
+
+    await screen.findByText('Chest')
+    fireEvent.click(screen.getByRole('button', { name: 'Language' }))
+    fireEvent.click(screen.getByRole('button', { name: /🇨🇳zh/i }))
+
+    expect(await screen.findByText('胸部')).toBeInTheDocument()
+    expect(screen.getByText('自适应训练计划生成器')).toBeInTheDocument()
+  })
+
+  test('switches interface language to english', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValueOnce({
+      ok: true,
+      json: async () => [{ key: 'chest', label: 'Chest' }],
+    })
+
+    render(<App />)
+
+    await screen.findByText('Chest')
+    fireEvent.click(screen.getByRole('button', { name: 'Language' }))
+    fireEvent.click(screen.getByRole('button', { name: /🇷🇺ru/i }))
+
+    expect(await screen.findByText('Грудь')).toBeInTheDocument()
+    expect(screen.getByText('Адаптивный конструктор тренировок')).toBeInTheDocument()
+  })
 })
