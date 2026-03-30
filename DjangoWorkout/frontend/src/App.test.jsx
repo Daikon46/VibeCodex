@@ -17,7 +17,7 @@ describe('App', () => {
   test('shows validation when no muscle groups are selected', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValueOnce({
       ok: true,
-      json: async () => [{ key: 'chest', label: 'Chest' }],
+      json: async () => [{ key: 'chest', label: 'Chest', label_ru: 'Грудь', label_zh: '胸部' }],
     })
 
     render(<App />)
@@ -31,7 +31,7 @@ describe('App', () => {
   test('persists theme selection', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValueOnce({
       ok: true,
-      json: async () => [{ key: 'chest', label: 'Chest' }],
+      json: async () => [{ key: 'chest', label: 'Chest', label_ru: 'Грудь', label_zh: '胸部' }],
     })
 
     render(<App />)
@@ -47,7 +47,7 @@ describe('App', () => {
   test('switches interface language to chinese', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValueOnce({
       ok: true,
-      json: async () => [{ key: 'chest', label: 'Chest' }],
+      json: async () => [{ key: 'chest', label: 'Chest', label_ru: 'Грудь', label_zh: '胸部' }],
     })
 
     render(<App />)
@@ -63,7 +63,7 @@ describe('App', () => {
   test('switches interface language to english', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValueOnce({
       ok: true,
-      json: async () => [{ key: 'chest', label: 'Chest' }],
+      json: async () => [{ key: 'chest', label: 'Chest', label_ru: 'Грудь', label_zh: '胸部' }],
     })
 
     render(<App />)
@@ -80,7 +80,7 @@ describe('App', () => {
     vi.spyOn(global, 'fetch')
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => [{ key: 'chest', label: 'Chest' }],
+        json: async () => [{ key: 'chest', label: 'Chest', label_ru: 'Грудь', label_zh: '胸部' }],
       })
       .mockResolvedValueOnce({
         ok: true,

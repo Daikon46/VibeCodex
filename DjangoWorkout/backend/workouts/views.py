@@ -2,7 +2,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Exercise
+from .models import MuscleGroup
 from .serializers import WorkoutRequestSerializer, WorkoutResponseSerializer
 from .services import WorkoutGenerationError, generate_workout
 
@@ -10,8 +10,13 @@ from .services import WorkoutGenerationError, generate_workout
 class MuscleGroupListView(APIView):
     def get(self, request):
         groups = [
-            {"key": key, "label": label}
-            for key, label in Exercise.MuscleGroup.choices
+            {
+                "key": group.key,
+                "label": group.label,
+                "label_ru": group.label_ru,
+                "label_zh": group.label_zh,
+            }
+            for group in MuscleGroup.objects.filter(is_active=True)
         ]
         return Response(groups)
 

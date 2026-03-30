@@ -2,14 +2,28 @@ from django.core.validators import MinValueValidator
 from django.db import models
 
 
-class Exercise(models.Model):
-    class MuscleGroup(models.TextChoices):
-        CHEST = "chest", "Chest"
-        BACK = "back", "Back"
-        SHOULDERS = "shoulders", "Shoulders"
-        HANDS = "hands", "Hands"
-        LEGS = "legs", "Legs"
+class MuscleGroup(models.Model):
+    CHEST = "chest"
+    BACK = "back"
+    SHOULDERS = "shoulders"
+    ARMS = "arms"
+    LEGS = "legs"
 
+    key = models.CharField(max_length=24, unique=True)
+    label = models.CharField(max_length=64)
+    label_ru = models.CharField(max_length=64)
+    label_zh = models.CharField(max_length=64)
+    sort_order = models.PositiveSmallIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["sort_order", "label"]
+
+    def __str__(self):
+        return self.label
+
+
+class Exercise(models.Model):
     class Difficulty(models.TextChoices):
         EASY = "easy", "Easy"
         MEDIUM = "medium", "Medium"
@@ -18,7 +32,11 @@ class Exercise(models.Model):
     name = models.CharField(max_length=120, unique=True)
     name_ru = models.CharField(max_length=120, blank=True)
     name_zh = models.CharField(max_length=120, blank=True)
-    muscle_group = models.CharField(max_length=24, choices=MuscleGroup.choices)
+    muscle_group = models.ForeignKey(
+        MuscleGroup,
+        on_delete=models.PROTECT,
+        related_name="exercises",
+    )
     difficulty = models.CharField(max_length=12, choices=Difficulty.choices)
     duration_seconds = models.PositiveIntegerField(validators=[MinValueValidator(30)])
     default_rest_seconds = models.PositiveIntegerField(default=30)
@@ -27,9 +45,7 @@ class Exercise(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["muscle_group", "difficulty", "duration_seconds", "name"]
+        ordering = ["muscle_group__sort_order", "difficulty", "duration_seconds", "name"]
 
     def __str__(self):
-        return f"{self.name} ({self.get_muscle_group_display()})"
-
-# Create your models here.
+        return f"{self.name} ({self.muscle_group.label})"

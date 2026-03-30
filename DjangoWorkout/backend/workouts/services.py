@@ -39,7 +39,7 @@ def _serialize_items(exercises):
                 exercise_name=exercise.name,
                 exercise_name_ru=exercise.name_ru or exercise.name,
                 exercise_name_zh=exercise.name_zh or exercise.name,
-                muscle_group=exercise.muscle_group,
+                muscle_group=exercise.muscle_group.key,
                 difficulty=exercise.difficulty,
                 duration_seconds=exercise.duration_seconds,
                 rest_seconds=rest_seconds,
@@ -89,7 +89,11 @@ def _append_mediums(plan, medium_exercises, target_seconds):
 
 def generate_workout(muscle_groups, target_duration_minutes):
     exercises = list(
-        Exercise.objects.filter(muscle_group__in=muscle_groups, is_active=True)
+        Exercise.objects.select_related("muscle_group").filter(
+            muscle_group__key__in=muscle_groups,
+            muscle_group__is_active=True,
+            is_active=True,
+        )
     )
     if not exercises:
         raise WorkoutGenerationError("No exercises are available for the selected muscle groups.")

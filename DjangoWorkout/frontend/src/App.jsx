@@ -43,13 +43,6 @@ const translations = {
     switchToLightTheme: 'Переключить на светлую тему',
     switchToDarkTheme: 'Переключить на тёмную тему',
     language: 'Язык',
-    muscleGroups: {
-      chest: 'Грудь',
-      back: 'Спина',
-      shoulders: 'Плечи',
-      hands: 'Руки',
-      legs: 'Ноги',
-    },
     difficulties: {
       easy: 'легко',
       medium: 'средне',
@@ -94,13 +87,6 @@ const translations = {
     switchToLightTheme: 'Switch to light theme',
     switchToDarkTheme: 'Switch to dark theme',
     language: 'Language',
-    muscleGroups: {
-      chest: 'Chest',
-      back: 'Back',
-      shoulders: 'Shoulders',
-      hands: 'Hands',
-      legs: 'Legs',
-    },
     difficulties: {
       easy: 'easy',
       medium: 'medium',
@@ -145,13 +131,6 @@ const translations = {
     switchToLightTheme: '切换到浅色主题',
     switchToDarkTheme: '切换到深色主题',
     language: '语言',
-    muscleGroups: {
-      chest: '胸部',
-      back: '背部',
-      shoulders: '肩部',
-      hands: '手臂',
-      legs: '腿部',
-    },
     difficulties: {
       easy: '简单',
       medium: '中等',
@@ -232,7 +211,17 @@ function App() {
   }
 
   function translateMuscleGroup(groupKey, fallbackLabel = groupKey) {
-    return t.muscleGroups[groupKey] || fallbackLabel
+    const group = muscleGroups.find((item) => item.key === groupKey)
+    if (!group) {
+      return fallbackLabel
+    }
+    if (language === 'ru') {
+      return group.label_ru || group.label
+    }
+    if (language === 'zh') {
+      return group.label_zh || group.label
+    }
+    return group.label
   }
 
   function translateDifficulty(difficultyKey) {
