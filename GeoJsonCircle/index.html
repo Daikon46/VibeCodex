@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GeoJSON Circle Generator</title>
+  <style>
+    :root {
+      --bg: #f4f7f2;
+      --panel: #ffffff;
+      --ink: #1f2933;
+      --accent: #0b6e4f;
+      --error: #b42318;
+      --border: #d0d7de;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 15% 15%, #dfeee6 0%, transparent 45%),
+        radial-gradient(circle at 85% 85%, #e6f2ed 0%, transparent 40%),
+        var(--bg);
+      display: grid;
+      place-items: center;
+      padding: 1rem;
+    }
+
+    .app {
+      width: min(900px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem;
+      box-shadow: 0 10px 30px rgba(31, 41, 51, 0.08);
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 1.35rem;
+      letter-spacing: 0.02em;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.9rem;
+      margin-bottom: 0.35rem;
+      font-weight: 600;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.6rem 0.7rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+
+    .actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.9rem;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 0.62rem 0.9rem;
+      font-size: 0.92rem;
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+    }
+
+    button.secondary {
+      background: #4b5563;
+    }
+
+    #status {
+      margin-top: 0.75rem;
+      min-height: 1.2rem;
+      font-size: 0.92rem;
+    }
+
+    .error { color: var(--error); }
+    .ok { color: var(--accent); }
+
+    pre {
+      margin-top: 1rem;
+      margin-bottom: 0;
+      padding: 0.85rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #f8fafb;
+      overflow: auto;
+      max-height: 55vh;
+      font-size: 0.85rem;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 760px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <h1>GeoJSON Circle Generator</h1>
+
+    <div class="grid">
+      <div>
+        <label for="latitude">Latitude (decimal degrees)</label>
+        <input id="latitude" type="number" step="any" value="55.027465" />
+      </div>
+      <div>
+        <label for="longitude">Longitude (decimal degrees)</label>
+        <input id="longitude" type="number" step="any" value="82.956630" />
+      </div>
+      <div>
+        <label for="radius">Radius (meters)</label>
+        <input id="radius" type="number" step="any" min="0" value="1000" />
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="generate" type="button">Generate</button>
+      <button id="generate-with-properties" type="button">Add GeoJson properties</button>
+      <button id="copy" class="secondary" type="button">Copy JSON</button>
+    </div>
+
+    <div id="status" aria-live="polite"></div>
+    <pre id="output"></pre>
+  </main>
+
+  <script>
+    const EARTH_RADIUS_METERS = 6371008.8;
+
+    const latitudeInput = document.getElementById("latitude");
+    const longitudeInput = document.getElementById("longitude");
+    const radiusInput = document.getElementById("radius");
+    const generateButton = document.getElementById("generate");
+    const generateWithPropertiesButton = document.getElementById("generate-with-properties");
+    const copyButton = document.getElementById("copy");
+    const outputEl = document.getElementById("output");
+    const statusEl = document.getElementById("status");
+
+    function toRadians(degrees) {
+      return (degrees * Math.PI) / 180;
+    }
+
+    function toDegrees(radians) {
+      return (radians * 180) / Math.PI;
+    }
+
+    function clamp(min, max, value) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function getPointCount(radiusMeters) {
+      const circumference = 2 * Math.PI * radiusMeters;
+      return clamp(32, 256, Math.round(circumference / 250));
+    }
+
+    function roundCoord(value) {
+      return Number(value.toFixed(14));
+    }
+
+    function destinationPoint(latDeg, lonDeg, distanceMeters, bearingRad) {
+      const angularDistance = distanceMeters / EARTH_RADIUS_METERS;
+
+      const lat1 = toRadians(latDeg);
+      const lon1 = toRadians(lonDeg);
+
+      const sinLat1 = Math.sin(lat1);
+      const cosLat1 = Math.cos(lat1);
+      const sinAd = Math.sin(angularDistance);
+      const cosAd = Math.cos(angularDistance);
+
+      const lat2 = Math.asin(
+        sinLat1 * cosAd + cosLat1 * sinAd * Math.cos(bearingRad)
+      );
+
+      const lon2 =
+        lon1 +
+        Math.atan2(
+          Math.sin(bearingRad) * sinAd * cosLat1,
+          cosAd - sinLat1 * Math.sin(lat2)
+        );
+
+      const normalizedLon = ((lon2 + 3 * Math.PI) % (2 * Math.PI)) - Math.PI;
+
+      return [roundCoord(toDegrees(normalizedLon)), roundCoord(toDegrees(lat2))];
+    }
+
+    function generateCircleGeometry(latitude, longitude, radiusMeters) {
+      const points = getPointCount(radiusMeters);
+      const step = (2 * Math.PI) / points;
+      const ring = [];
+
+      for (let i = 0; i < points; i += 1) {
+        const bearing = i * step;
+        ring.push(destinationPoint(latitude, longitude, radiusMeters, bearing));
+      }
+
+      // GeoJSON polygon ring must be closed.
+      ring.push(ring[0]);
+
+      return {
+        geometry: {
+          type: "Polygon",
+          coordinates: [ring],
+        },
+      };
+    }
+
+    function parseAndValidate() {
+      const latitude = Number(latitudeInput.value);
+      const longitude = Number(longitudeInput.value);
+      const radiusMeters = Number(radiusInput.value);
+
+      if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
+        return { error: "Latitude must be a number between -90 and 90." };
+      }
+
+      if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+        return { error: "Longitude must be a number between -180 and 180." };
+      }
+
+      if (!Number.isFinite(radiusMeters) || radiusMeters <= 0) {
+        return { error: "Radius must be a number greater than 0." };
+      }
+
+      return { latitude, longitude, radiusMeters };
+    }
+
+    function setStatus(message, isError) {
+      statusEl.textContent = message;
+      statusEl.className = isError ? "error" : "ok";
+    }
+
+    function generate() {
+      const parsed = parseAndValidate();
+
+      if (parsed.error) {
+        outputEl.textContent = "";
+        setStatus(parsed.error, true);
+        return;
+      }
+
+      const result = generateCircleGeometry(
+        parsed.latitude,
+        parsed.longitude,
+        parsed.radiusMeters
+      );
+
+      outputEl.textContent = JSON.stringify(result, null, 2);
+
+      const points = result.geometry.coordinates[0].length - 1;
+      setStatus(`Generated polygon with ${points} points.`, false);
+    }
+
+    function generateWithProperties() {
+      const parsed = parseAndValidate();
+
+      if (parsed.error) {
+        outputEl.textContent = "";
+        setStatus(parsed.error, true);
+        return;
+      }
+
+      const result = generateCircleGeometry(
+        parsed.latitude,
+        parsed.longitude,
+        parsed.radiusMeters
+      );
+
+      const featureCollection = {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: {},
+            geometry: result.geometry,
+          },
+        ],
+      };
+
+      outputEl.textContent = JSON.stringify(featureCollection, null, 2);
+
+      const points = result.geometry.coordinates[0].length - 1;
+      setStatus(`Generated FeatureCollection with ${points} points.`, false);
+    }
+
+    async function copyJson() {
+      if (!outputEl.textContent.trim()) {
+        setStatus("Generate JSON first.", true);
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(outputEl.textContent);
+        setStatus("JSON copied to clipboard.", false);
+      } catch (error) {
+        setStatus("Clipboard copy failed in this browser context.", true);
+      }
+    }
+
+    generateButton.addEventListener("click", generate);
+    generateWithPropertiesButton.addEventListener("click", generateWithProperties);
+    copyButton.addEventListener("click", copyJson);
+
+    generate();
+  </script>
+</body>
+</html>
