@@ -1,17 +1,36 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GeoJSON Circle Generator</title>
   <style>
     :root {
+      --bg: #0a1115;
+      --bg-grad-a: #17303b;
+      --bg-grad-b: #12262d;
+      --panel: #111a20;
+      --ink: #e7edf1;
+      --accent: #16a085;
+      --error: #ff7a86;
+      --border: #2a3b44;
+      --pre-bg: #0d161c;
+      --secondary-btn: #36424c;
+      --shadow: rgba(0, 0, 0, 0.35);
+    }
+
+    :root[data-theme="light"] {
       --bg: #f4f7f2;
+      --bg-grad-a: #dfeee6;
+      --bg-grad-b: #e6f2ed;
       --panel: #ffffff;
       --ink: #1f2933;
       --accent: #0b6e4f;
       --error: #b42318;
       --border: #d0d7de;
+      --pre-bg: #f8fafb;
+      --secondary-btn: #4b5563;
+      --shadow: rgba(31, 41, 51, 0.08);
     }
 
     * { box-sizing: border-box; }
@@ -22,8 +41,8 @@
       font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
       color: var(--ink);
       background:
-        radial-gradient(circle at 15% 15%, #dfeee6 0%, transparent 45%),
-        radial-gradient(circle at 85% 85%, #e6f2ed 0%, transparent 40%),
+        radial-gradient(circle at 15% 15%, var(--bg-grad-a) 0%, transparent 45%),
+        radial-gradient(circle at 85% 85%, var(--bg-grad-b) 0%, transparent 40%),
         var(--bg);
       display: grid;
       place-items: center;
@@ -36,7 +55,7 @@
       border: 1px solid var(--border);
       border-radius: 14px;
       padding: 1.25rem;
-      box-shadow: 0 10px 30px rgba(31, 41, 51, 0.08);
+      box-shadow: 0 10px 30px var(--shadow);
     }
 
     h1 {
@@ -64,6 +83,8 @@
       border: 1px solid var(--border);
       border-radius: 8px;
       font-size: 0.95rem;
+      color: var(--ink);
+      background: var(--pre-bg);
     }
 
     .actions {
@@ -84,7 +105,7 @@
     }
 
     button.secondary {
-      background: #4b5563;
+      background: var(--secondary-btn);
     }
 
     #status {
@@ -102,7 +123,7 @@
       padding: 0.85rem;
       border: 1px solid var(--border);
       border-radius: 8px;
-      background: #f8fafb;
+      background: var(--pre-bg);
       overflow: auto;
       max-height: 55vh;
       font-size: 0.85rem;
@@ -121,21 +142,22 @@
     <div class="grid">
       <div>
         <label for="latitude">Latitude (decimal degrees)</label>
-        <input id="latitude" type="number" step="any" value="55.027465" />
+        <input id="latitude" type="text" inputmode="decimal" value="55.027465" />
       </div>
       <div>
         <label for="longitude">Longitude (decimal degrees)</label>
-        <input id="longitude" type="number" step="any" value="82.956630" />
+        <input id="longitude" type="text" inputmode="decimal" value="82.956630" />
       </div>
       <div>
         <label for="radius">Radius (meters)</label>
-        <input id="radius" type="number" step="any" min="0" value="1000" />
+        <input id="radius" type="text" inputmode="decimal" value="1000" />
       </div>
     </div>
 
     <div class="actions">
       <button id="generate" type="button">Generate</button>
       <button id="generate-with-properties" type="button">Add GeoJson properties</button>
+      <button id="theme-toggle" class="secondary" type="button">Switch to light theme</button>
       <button id="copy" class="secondary" type="button">Copy JSON</button>
     </div>
 
@@ -151,6 +173,7 @@
     const radiusInput = document.getElementById("radius");
     const generateButton = document.getElementById("generate");
     const generateWithPropertiesButton = document.getElementById("generate-with-properties");
+    const themeToggleButton = document.getElementById("theme-toggle");
     const copyButton = document.getElementById("copy");
     const outputEl = document.getElementById("output");
     const statusEl = document.getElementById("status");
@@ -244,9 +267,63 @@
       return { latitude, longitude, radiusMeters };
     }
 
+    function sanitizeNumericString(rawValue, allowNegative) {
+      const normalized = rawValue.replace(/,/g, ".");
+      let result = "";
+      let hasDot = false;
+      let hasMinus = false;
+
+      for (const char of normalized) {
+        if (char >= "0" && char <= "9") {
+          result += char;
+          continue;
+        }
+
+        if (char === "." && !hasDot) {
+          result += ".";
+          hasDot = true;
+          continue;
+        }
+
+        if (char === "-" && allowNegative && !hasMinus && result.length === 0) {
+          result += "-";
+          hasMinus = true;
+        }
+      }
+
+      if (result.startsWith(".")) {
+        result = `0${result}`;
+      } else if (result.startsWith("-.")) {
+        result = result.replace("-.", "-0.");
+      }
+
+      return result;
+    }
+
+    function sanitizeFieldValue(inputEl, allowNegative) {
+      const sanitized = sanitizeNumericString(inputEl.value, allowNegative);
+      if (inputEl.value !== sanitized) {
+        inputEl.value = sanitized;
+      }
+    }
+
     function setStatus(message, isError) {
       statusEl.textContent = message;
       statusEl.className = isError ? "error" : "ok";
+    }
+
+    function setThemeButtonText() {
+      const currentTheme = document.documentElement.getAttribute("data-theme");
+      themeToggleButton.textContent =
+        currentTheme === "dark" ? "Switch to light theme" : "Switch to dark theme";
+    }
+
+    function toggleTheme() {
+      const currentTheme = document.documentElement.getAttribute("data-theme");
+      const nextTheme = currentTheme === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", nextTheme);
+      setThemeButtonText();
+      setStatus(`Switched to ${nextTheme} theme.`, false);
     }
 
     function generate() {
@@ -318,8 +395,13 @@
 
     generateButton.addEventListener("click", generate);
     generateWithPropertiesButton.addEventListener("click", generateWithProperties);
+    themeToggleButton.addEventListener("click", toggleTheme);
     copyButton.addEventListener("click", copyJson);
+    latitudeInput.addEventListener("input", () => sanitizeFieldValue(latitudeInput, true));
+    longitudeInput.addEventListener("input", () => sanitizeFieldValue(longitudeInput, true));
+    radiusInput.addEventListener("input", () => sanitizeFieldValue(radiusInput, false));
 
+    setThemeButtonText();
     generate();
   </script>
 </body>
